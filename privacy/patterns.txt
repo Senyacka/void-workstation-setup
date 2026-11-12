@@ -1,0 +1,15 @@
+# Universal leak patterns: label <TAB> extended regexp.
+# Nothing personal is stored here: privacy-scan adds the current login,
+# hostname and git identity at runtime and never writes them to disk.
+absolute home path of any machine	(^|[[:space:]\"'(=])/home/[A-Za-z0-9._-]+/
+absolute path on macOS	(^|[[:space:]\"'(=])/Users/[A-Za-z0-9._-]+/
+private key or certificate	-----BEGIN [A-Z ]*(PRIVATE KEY|CERTIFICATE)-----
+public ssh key	(ssh-rsa|ssh-ed25519|ecdsa-sha2-nistp[0-9]+) AAAA[A-Za-z0-9+/=]{20,}
+token in clear text	([Tt]oken|[Aa][Pp][Ii][_-]?[Kk]ey)[[:space:]]*[:=][[:space:]]*[A-Za-z0-9._-]{8,}
+password in clear text	([Pp]assword|[Pp]asswd)[[:space:]]*[:=][[:space:]]*[^[:space:]\"']{4,}
+pre-shared key	(psk|PreSharedKey|wifi-sec[.]psk)[[:space:]]*[=:]
+bearer token	Bearer [A-Za-z0-9._-]{16,}
+jwt token	eyJ[A-Za-z0-9_-]{10,}[.]eyJ[A-Za-z0-9_-]{10,}
+credentials inside url	[a-z][a-z0-9+.-]*://[^/@[:space:]]+:[^/@[:space:]]+@
+private ipv4 address	(^|[^0-9.])(10[.][0-9]{1,3}|192[.]168|172[.](1[6-9]|2[0-9]|3[01]))[.][0-9]{1,3}[.][0-9]{1,3}
+mac address	([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}

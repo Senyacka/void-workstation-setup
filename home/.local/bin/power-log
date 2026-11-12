@@ -1,0 +1,91 @@
+#!/bin/sh
+# power-log — сэмплер энергопотребления для A/B-сравнений на батарее.
+# Пишет CSV в ~/.local/state/power-log.csv: разряд, профиль, лимиты, обороты, температуры.
+# Использование: power-log start [секунды_между_сэмплами] | power-log stop | power-log stats [файл]
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}"
+CSV="$STATE_DIR/power-log.csv"
+PIDFILE="$STATE_DIR/power-log.pid"
+BAT=
+for dev in /sys/class/power_supply/*; do
+    [ "$(cat "$dev/type" 2>/dev/null)" = Battery ] && { BAT=$dev; break; }
+done
+BAT=${BAT:-/nonexistent}
+FANHWMON=
+for dev in /sys/class/hwmon/*; do
+    [ -r "$dev/fan1_input" ] || continue
+    case $(cat "$dev/name" 2>/dev/null) in asus*|thinkpad|dell_smm) FANHWMON=$dev; break ;; esac
+done
+AC=
+for dev in /sys/class/power_supply/*; do
+    case $(cat "$dev/type" 2>/dev/null) in Mains|USB) AC=$dev; break ;; esac
+done
+BL=
+for dev in /sys/class/backlight/*; do
+    [ -r "$dev/brightness" ] && { BL=$dev; break; }
+done
+RAPL=/sys/class/powercap/intel-rapl:0/energy_uj
+
+pkg_temp() {
+    t=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1)
+    echo $(( ${t:-0} / 1000 ))
+}
+
+aspm_active() {
+    sed -n 's/.*\[\([a-z]*\)\].*/\1/p' /sys/module/pcie_aspm/parameters/policy 2>/dev/null
+}
+
+sample() {
+    printf '%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n' \
+        "$(date +%s)" \
+        "$(cat $BAT/power_now 2>/dev/null || echo 0)" \
+        "$(cat $BAT/capacity 2>/dev/null || echo 0)" \
+        "$(cat $BAT/status 2>/dev/null)" \
+        "$(cat ${AC:-/nonexistent}/online 2>/dev/null)" \
+        "$(cat /sys/firmware/acpi/platform_profile 2>/dev/null)" \
+        "$(cat /sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference 2>/dev/null)" \
+        "$(cat /sys/devices/system/cpu/intel_pstate/no_turbo 2>/dev/null)" \
+        "$(cat /sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw 2>/dev/null || echo 0)" \
+        "$(cat ${FANHWMON:-/nonexistent}/fan1_input 2>/dev/null || echo 0)" \
+        "$(pkg_temp)" \
+        "$(cat ${BL:-/nonexistent}/brightness 2>/dev/null || echo 0)" \
+        "$(aspm_active)" \
+        "$(sudo -n cat $RAPL 2>/dev/null || echo 0)"
+}
+
+header() {
+    echo 'ts,power_now_uw,capacity,status,ac,platform_profile,epp,no_turbo,pl1_uw,fan_rpm,temp_c,backlight,aspm,rapl_uj'
+}
+
+case "${1:-stats}" in
+    start)
+        interval=${2:-10}
+        mkdir -p "$STATE_DIR"
+        [ -f "$CSV" ] || header > "$CSV"
+        ( while :; do sample >> "$CSV"; sleep "$interval"; done ) &
+        echo $! > "$PIDFILE"
+        echo "power-log: пишу в $CSV каждые ${interval}s (pid $(cat "$PIDFILE"))"
+        ;;
+    stop)
+        [ -f "$PIDFILE" ] && kill "$(cat "$PIDFILE")" 2>/dev/null && rm -f "$PIDFILE"
+        echo "power-log: остановлен"
+        ;;
+    stats)
+        file=${2:-$CSV}
+        [ -f "$file" ] || { echo "power-log: нет файла $file" >&2; exit 1; }
+        awk -F, '
+            NR>1 && $5==0 && $2>0 {
+                n++; s+=$2; if(min==0||$2<min)min=$2; if($2>max)max=$2
+                fan+=$10; t+=$11; bl+=$12; cap+=$3; pl+=$9
+            }
+            END {
+                if(!n){print "нет сэмплов на батарее"; exit}
+                printf "сэмплов (батарея): %d\n", n
+                printf "разряд: сред %.2f Вт · мин %.2f · макс %.2f\n", s/n/1e6, min/1e6, max/1e6
+                printf "батарея: %.0f%% · PL1 %.0f Вт · обороты %.0f rpm · пакет %.0f °C · подсветка %d/400\n", cap/n, pl/n/1e6, fan/n, t/n, bl/n
+                printf "оценка автономности от 80%%: %.1f ч\n", 0.8*65.681/(s/n/1e6)
+            }' "$file"
+        ;;
+    *)
+        echo "использование: power-log start [сек] | stop | stats [файл]" >&2; exit 2 ;;
+    esac

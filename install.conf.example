@@ -1,0 +1,35 @@
+# Пример конфигурации. Реальный файл создаёт menu.sh (state/menu.conf)
+# и он не коммитится: в нём есть имя пользователя.
+
+TARGET_USER=user
+TARGET_HOME=/home/user
+HOSTNAME=workstation
+TIMEZONE=Europe/Moscow
+LOCALE=en_US.UTF-8
+GREETER=dms
+PRESET=presets/default.conf
+
+# возможности железа (выставляются детектом)
+CAP_HW_POLICY=on
+CAP_HW_CHARGE=on
+CAP_HW_ACPI=on
+CAP_HW_GPU_DROPIN=on
+
+# выбранные группы
+GROUP_BASE=on
+GROUP_CLI_QOL=on
+GROUP_SCREENSHOTS=on
+GROUP_HARDWARE_TOOLS=on
+GROUP_NETWORK=on
+GROUP_BACKUP=on
+GROUP_MEDIA=off
+GROUP_PRINT_SCAN=off
+GROUP_SECRETS=off
+GROUP_DEV=off
+GROUP_VMS=off
+GROUP_DOCKER=off
+GROUP_APPS=off
+GROUP_X11_LEGACY=off
+
+# плоский список пакетов, который ставит install.sh
+PACKAGES="niri dms quickshell matugen dgop greetd dms-greeter pipewire wireplumber"

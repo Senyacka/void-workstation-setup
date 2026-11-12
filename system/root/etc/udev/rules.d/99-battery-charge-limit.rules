@@ -1,0 +1,11 @@
+# Some ECs forget the charge threshold after a full charge or power loss.
+# The limit itself is owned by DMS (Settings -> Power & battery -> Charge limit): the
+# helper only restores what DMS last applied, and at early boot sysfs may answer EACCES
+# while the EC is not ready, so the write lives in the helper and not in ATTR{} here.
+SUBSYSTEM=="power_supply", KERNEL=="BAT0", ACTION=="add", RUN+="/usr/local/sbin/battery-charge-limit boot"
+SUBSYSTEM=="power_supply", KERNEL=="BAT0", ACTION=="change", RUN+="/usr/local/sbin/battery-charge-limit change"
+
+# Power source changes, including the ones the EC only reports after resume:
+# acpid has no resume event, so udev is the reliable trigger.
+SUBSYSTEM=="power_supply", KERNEL=="AC0", ACTION=="add|change", RUN+="/usr/local/sbin/power-sync auto"
+SUBSYSTEM=="power_supply", KERNEL=="ucsi-source-psy-*", ACTION=="add|change", RUN+="/usr/local/sbin/power-sync auto"

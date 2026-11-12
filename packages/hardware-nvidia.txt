@@ -1,0 +1,4 @@
+# Проприетарный драйвер NVIDIA; ставится только при явном подтверждении.
+# Требует nonfree-репозиторий и параметры ядра nvidia-drm.modeset=1.
+nvidia
+nvidia-vaapi-driver

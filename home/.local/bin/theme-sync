@@ -1,0 +1,175 @@
+#!/usr/bin/env python3
+"""Разводит палитру DMS по GTK-темам, стеклянному Thunar и VSCodium.
+
+Источник истины — ~/.config/gtk-3.0/dank-colors.css (его целиком пишет DMS).
+Запускать после смены темы/палитры в DMS.
+"""
+
+import json
+import re
+import shutil
+import sys
+from pathlib import Path
+
+HOME = Path.home()
+PALETTE = HOME / ".config/gtk-3.0/dank-colors.css"
+THEMES = HOME / ".local/share/themes"
+DARK = "adw-gtk3-dark"
+GLASS = "adw-gtk3-glass"
+LIGHT = "adw-gtk3"
+VSCODE = HOME / ".config/VSCodium/User/settings.json"
+MARKERS = re.compile(r"/\* BEGIN DMS OVERRIDE \*/.*?/\* END DMS OVERRIDE \*/\n?", re.S)
+GLASS_RULES = """
+/* Стекло: альфа задаётся ОДНИМ слоем (окном), внутренние области прозрачны —
+   иначе слои перемножаются и окно снова непрозрачно. */
+.background { background-color: alpha(@window_bg_color, 0.62); }
+headerbar, .titlebar, headerbar:backdrop, .titlebar:backdrop {
+  background-color: transparent;
+  background-image: none;
+  box-shadow: none;
+}
+.sidebar, placessidebar, .sidebar-pane, separator.sidebar {
+  background-color: alpha(@sidebar_bg_color, 0.35);
+  background-image: none;
+}
+.view, iconview, treeview.view, textview text, .view text, iconview text {
+  background-color: transparent;
+  background-image: none;
+}
+scrolledwindow, viewport, .frame { background-color: transparent; }
+"""
+
+
+def read_palette() -> dict[str, str]:
+    """Собирает палитру из dank-colors.css, разворачивая ссылки вида @other_color."""
+    raw = {}
+    for name, value in re.findall(r"@define-color\s+([a-z_0-9]+)\s+([^;]+);", PALETTE.read_text()):
+        raw[name] = value.strip()
+
+    resolved = {}
+
+    def resolve(name: str, seen: frozenset[str] = frozenset()) -> str | None:
+        if name in resolved:
+            return resolved[name]
+        value = raw.get(name)
+        if value is None or name in seen:
+            return None
+        if value.startswith("@"):
+            value = resolve(value[1:], seen | {name})
+            if value is None:
+                return None
+        resolved[name] = value
+        return value
+
+    return {name: resolve(name) for name in raw if resolve(name)}
+
+
+def color(palette: dict[str, str], *names: str, default: str = "#000000") -> str:
+    for name in names:
+        if palette.get(name):
+            return palette[name]
+    return default
+
+
+def rgb(hex_color: str) -> tuple[int, int, int]:
+    value = hex_color.lstrip("#")
+    return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+
+
+def mix(a: str, b: str, t: float) -> str:
+    ra, rb = rgb(a), rgb(b)
+    return "#" + "".join(f"{round(ra[i] + (rb[i] - ra[i]) * t):02x}" for i in range(3))
+
+
+def patch_theme(theme: str, block: str) -> None:
+    for name in ("gtk.css", "gtk-dark.css"):
+        p = THEMES / theme / "gtk-3.0" / name
+        if not p.exists():
+            continue
+        css = MARKERS.sub("", p.read_text()).rstrip("\n")
+        p.write_text(css + "\n" + block)
+
+
+def sync_glass(block: str) -> None:
+    src, dst = THEMES / DARK, THEMES / GLASS
+    if not src.is_dir():
+        raise SystemExit(f"нет базовой темы {src}")
+    shutil.rmtree(dst, ignore_errors=True)
+    shutil.copytree(src, dst)
+    index = dst / "index.theme"
+    index.write_text(
+        re.sub(r"^(Name|GtkTheme)=.*$", lambda m: f"{m.group(1)}={GLASS}", index.read_text(), flags=re.M)
+    )
+    for name in ("gtk.css", "gtk-dark.css"):
+        p = dst / "gtk-3.0" / name
+        p.write_text(p.read_text().rstrip("\n") + "\n" + GLASS_RULES)
+
+
+def sync_vscode(p: dict[str, str]) -> int:
+    bg, fg = color(p, "window_bg_color"), color(p, "window_fg_color")
+    base, base_fg = color(p, "view_bg_color"), color(p, "view_fg_color")
+    accent, accent_fg = color(p, "accent_bg_color"), color(p, "accent_fg_color")
+    sidebar = color(p, "sidebar_bg_color", "card_bg_color", "window_bg_color")
+    muted = mix(bg, fg, 0.45)
+    colors = {
+        "titleBar.activeBackground": color(p, "headerbar_bg_color", "window_bg_color"),
+        "titleBar.activeForeground": fg,
+        "titleBar.inactiveBackground": color(p, "headerbar_bg_color", "window_bg_color"),
+        "titleBar.inactiveForeground": muted,
+        "activityBar.background": bg,
+        "activityBar.foreground": accent,
+        "activityBar.inactiveForeground": muted,
+        "activityBarBadge.background": accent,
+        "activityBarBadge.foreground": accent_fg,
+        "sideBar.background": sidebar,
+        "sideBar.foreground": fg,
+        "sideBarSectionHeader.background": sidebar,
+        "editor.background": base,
+        "editor.foreground": base_fg,
+        "editorLineNumber.foreground": mix(base, base_fg, 0.28),
+        "editorLineNumber.activeForeground": accent,
+        "editorCursor.foreground": accent,
+        "editor.selectionBackground": mix(base, accent, 0.30),
+        "editorGroupHeader.tabsBackground": sidebar,
+        "tab.activeBackground": base,
+        "tab.activeForeground": accent,
+        "tab.inactiveBackground": sidebar,
+        "tab.inactiveForeground": muted,
+        "statusBar.background": sidebar,
+        "statusBar.foreground": fg,
+        "statusBar.noFolderBackground": sidebar,
+        "panel.background": base,
+        "terminal.background": base,
+        "focusBorder": accent,
+        "list.activeSelectionBackground": mix(base, accent, 0.35),
+        "list.activeSelectionForeground": base_fg,
+        "list.hoverBackground": mix(base, fg, 0.08),
+        "button.background": accent,
+        "button.foreground": accent_fg,
+        "scrollbarSlider.background": mix(base, fg, 0.18),
+        "scrollbarSlider.hoverBackground": mix(base, fg, 0.30),
+    }
+    settings = json.loads(VSCODE.read_text())
+    settings["workbench.colorCustomizations"] = colors
+    VSCODE.write_text(json.dumps(settings, indent=4, ensure_ascii=False) + "\n")
+    return len(colors)
+
+
+def main() -> int:
+    mode = sys.argv[1] if len(sys.argv) > 1 else "dark"
+    if mode not in ("dark", "light"):
+        raise SystemExit("usage: theme-sync [dark|light]")
+
+    palette = read_palette()
+    block = PALETTE.read_text().strip("\n") + "\n"
+    patch_theme(DARK if mode == "dark" else LIGHT, block)
+    if mode == "dark":
+        sync_glass(block)
+    count = sync_vscode(palette) if VSCODE.exists() else 0
+    print(f"режим {mode}: тема обновлена, цветов VSCodium: {count}")
+    print(f"фон {palette['window_bg_color']}, акцент {palette['accent_bg_color']}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

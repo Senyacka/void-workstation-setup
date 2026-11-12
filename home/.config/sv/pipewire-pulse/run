@@ -1,0 +1,20 @@
+#!/bin/sh
+exec 2>&1
+# PulseAudio-совместимый слой (Chrome, Telegram, Steam и т.п.).
+# Ждём, пока core PipeWire реально ответит (сокет + короткий pw-cli под timeout).
+i=0
+while :; do
+    if [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && timeout 1 pw-cli info 0 >/dev/null 2>&1; then
+        break
+    fi
+    i=$((i + 1))
+    [ "$i" -gt 100 ] && break
+    sleep 0.2
+done
+# Чистим осиротевшие pulse-серверы: старый держит /run/user/UID/pulse/native,
+# из-за чего клиенты (pactl) подключаются к мёртвому серверу и висят.
+pkill -x pipewire-pulse 2>/dev/null || true
+for p in $(pgrep -u "$(id -u)" -f "pipewire -c pipewire-pulse.conf"); do kill "$p" 2>/dev/null; done
+sleep 0.3
+rm -f "$XDG_RUNTIME_DIR/pulse/native" "$XDG_RUNTIME_DIR/pulse/pid"
+exec pipewire-pulse

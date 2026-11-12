@@ -1,0 +1,6 @@
+mpv
+imv
+zathura
+ffmpeg
+yt-dlp
+pavucontrol

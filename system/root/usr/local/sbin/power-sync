@@ -1,0 +1,117 @@
+#!/bin/sh
+# power-sync - policy by power source (AC / battery).
+# sysfs only: called from rc.local and acpid, where there is no session bus.
+# platform_profile is owned by power-profiles-daemon and DMS: never touched here.
+set -u
+
+# Пути определяются по факту: на другой машине имена устройств другие, а на
+# не-Intel железе половины этих файлов просто нет (запись тогда игнорируется).
+AC=
+for dev in /sys/class/power_supply/*; do
+    case $(cat "$dev/type" 2>/dev/null) in
+        Mains|USB) AC=$dev/online; break ;;
+    esac
+done
+TURBO=/sys/devices/system/cpu/intel_pstate/no_turbo
+PL1=/sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
+PL2=/sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
+FANS=/nonexistent
+for dev in /sys/class/hwmon/*; do
+    [ -r "$dev/fan1_input" ] || continue
+    case $(cat "$dev/name" 2>/dev/null) in
+        asus*|thinkpad|dell_smm|acer-wmi|msi-ec) FANS=$dev/pwm1_enable; break ;;
+    esac
+done
+ASPM=/sys/module/pcie_aspm/parameters/policy
+BL=
+for dev in /sys/class/backlight/*; do
+    [ -r "$dev/brightness" ] && { BL=$dev; break; }
+done
+BATTERY_BRIGHTNESS_PERCENT=60
+AC_BRIGHTNESS_PERCENT=80
+
+put() { echo "$2" > "$1" 2>/dev/null || true; }
+
+# Лимит заряда принадлежит DMS (Settings -> Power & battery -> Charge limit):
+# хелпер только восстанавливает сохранённое значение после сброса EC и смены источника.
+charge_limit() { /usr/local/sbin/battery-charge-limit enforce >/dev/null 2>&1 || true; }
+
+# События приходят парами (AC0 и USB-C раздельно), поэтому сериализуем запуски.
+LOCK=/run/power-sync.lock
+trap 'rmdir "$LOCK" 2>/dev/null' EXIT
+n=0
+while ! mkdir "$LOCK" 2>/dev/null; do
+    n=$(( n + 1 ))
+    [ "$n" -gt 30 ] && break
+    sleep 0.2
+done
+
+brightness_cap() {
+    [ -n "$BL" ] || { echo 0; return 0; }
+    max=$(cat "$BL/max_brightness" 2>/dev/null || echo 0)
+    echo $(( max * $1 / 100 ))
+}
+
+# 1 = есть внешнее питание (AC0 или любой USB-C источник), 0 = только батарея,
+# none = источники ещё не зарегистрированы (вызывать политику нельзя).
+ac_online() {
+    state=none
+    [ -n "$AC" ] && [ -r "$AC" ] && state=$(cat "$AC" 2>/dev/null)
+    for src in /sys/class/power_supply/ucsi-source-psy-*/online; do
+        [ -r "$src" ] || continue
+        [ "$state" = none ] && state=0
+        [ "$(cat "$src" 2>/dev/null)" = 1 ] && state=1
+    done
+    echo "$state"
+}
+
+on_ac() {
+    put "$TURBO" 0
+    put "$PL1" 115000000
+    put "$PL2" 115000000
+    put "$FANS" 2
+    put "$ASPM" default
+    charge_limit
+    now=$(cat "$BL/brightness" 2>/dev/null || echo 0)
+    if [ "$(brightness_cap "$AC_BRIGHTNESS_PERCENT")" -gt 0 ] &&
+       [ "$now" = "$(brightness_cap "$BATTERY_BRIGHTNESS_PERCENT")" ]; then
+        put "$BL/brightness" "$(brightness_cap "$AC_BRIGHTNESS_PERCENT")"
+    fi
+}
+
+on_battery() {
+    put "$TURBO" 1
+    put "$PL1" 20000000
+    put "$PL2" 25000000
+    put "$FANS" 2
+    put "$ASPM" powersupersave
+    charge_limit
+    now=$(cat "$BL/brightness" 2>/dev/null || echo 0)
+    cap=$(brightness_cap "$BATTERY_BRIGHTNESS_PERCENT")
+    if [ "$cap" -gt 0 ] && [ "$now" -gt "$cap" ]; then
+        put "$BL/brightness" "$cap"
+    fi
+}
+
+debugfs_mount() {
+    grep -qs ' /sys/kernel/debug ' /proc/mounts || mount -t debugfs none /sys/kernel/debug 2>/dev/null || true
+}
+
+case "${1:-auto}" in
+    auto)
+        debugfs_mount
+        # Дать второму событию (AC0 или USB-C) дойти, чтобы политика не мигала.
+        sleep 0.4
+        case "$(ac_online)" in
+            1) on_ac ;;
+            0) on_battery ;;
+            *) exit 0 ;;
+        esac
+        ;;
+    ac)      on_ac ;;
+    battery) on_battery ;;
+    *)
+        echo 'usage: power-sync [auto|ac|battery]' >&2
+        exit 2
+        ;;
+esac

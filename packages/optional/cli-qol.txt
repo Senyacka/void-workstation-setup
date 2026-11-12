@@ -1,0 +1,10 @@
+fzf
+ripgrep
+fd
+jq
+bat
+eza
+tree
+tmux
+btop
+htop

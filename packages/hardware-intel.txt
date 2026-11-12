@@ -1,0 +1,7 @@
+# Применяется, если определён CPU Intel и/или GPU Intel.
+intel-ucode
+intel-media-driver
+libva-intel-driver
+libva-utils
+mesa-vulkan-intel
+intel-gpu-tools

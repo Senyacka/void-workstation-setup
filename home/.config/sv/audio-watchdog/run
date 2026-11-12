@@ -1,0 +1,30 @@
+#!/bin/sh
+exec 2>&1
+# Watchdog аудио-стека: сам лечит ситуацию, когда Pulse-слой перестаёт отвечать
+# (зависший/дублирующийся WirePlumber — известная болячка связки DMS + WirePlumber).
+# Проверка раз в 30 с; действие — только после двух неудач подряд.
+FAILS=0
+while :; do
+    sleep 30
+    if timeout 3 pactl info >/dev/null 2>&1; then
+        FAILS=0
+        continue
+    fi
+    FAILS=$((FAILS + 1))
+    [ "$FAILS" -lt 2 ] && continue
+    echo "$(date -Is) pulse не отвечает, перезапускаю WirePlumber"
+    pkill -9 -x wireplumber 2>/dev/null || true
+    sv restart "$HOME/.config/service/wireplumber" >/dev/null 2>&1 || true
+    sleep 5
+    if timeout 3 pactl info >/dev/null 2>&1; then FAILS=0; continue; fi
+    echo "$(date -Is) pulse всё ещё молчит, перезапускаю pipewire-pulse"
+    sv restart "$HOME/.config/service/pipewire-pulse" >/dev/null 2>&1 || true
+    sleep 5
+    if timeout 3 pactl info >/dev/null 2>&1; then FAILS=0; continue; fi
+    echo "$(date -Is) pulse мёртв, перезапускаю весь стек"
+    sv restart "$HOME/.config/service/pipewire" >/dev/null 2>&1 || true
+    sleep 3
+    sv restart "$HOME/.config/service/wireplumber" >/dev/null 2>&1 || true
+    sv restart "$HOME/.config/service/pipewire-pulse" >/dev/null 2>&1 || true
+    FAILS=0
+done

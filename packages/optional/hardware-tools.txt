@@ -1,0 +1,6 @@
+lm_sensors
+fwupd
+nvtop
+powertop
+gnome-disk-utility
+Vulkan-Tools

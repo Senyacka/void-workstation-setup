@@ -1,0 +1,3 @@
+#!/bin/sh
+# Файловый менеджер в «стеклянной» теме: полупрозрачный фон + блюр niri.
+exec env GTK_THEME=adw-gtk3-glass /usr/bin/thunar "$@"

@@ -1,0 +1,18 @@
+#!/bin/sh
+exec 2>&1
+# WirePlumber: единственный экземпляр на сессию, под присмотром runit.
+# Ждём готовности core PipeWire (сокет + короткий pw-cli под timeout).
+i=0
+while :; do
+    if [ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && timeout 1 pw-cli info 0 >/dev/null 2>&1; then
+        break
+    fi
+    i=$((i + 1))
+    [ "$i" -gt 100 ] && break
+    sleep 0.2
+done
+# ВАЖНО: -9, а не TERM. Зависший WirePlumber игнорирует SIGTERM, и без -9
+# при рестарте остаётся дубликат — два session-manager-а подвешивают граф.
+pkill -9 -x wireplumber 2>/dev/null || true
+sleep 0.3
+exec wireplumber

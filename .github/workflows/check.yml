@@ -1,0 +1,20 @@
+name: check
+on: [push, pull_request]
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Синтаксис shell и python
+        run: |
+          for f in *.sh tools/*.sh lib/*.sh lang/*.sh; do sh -n "$f"; done
+          python3 -c "compile(open('tools/pkgdiff.py').read(), 'pkgdiff.py', 'exec')"
+      - name: Нет персональных данных и секретов
+        run: ./tools/privacy-scan.sh
+      - name: У каждого пакета есть описание
+        run: ./tools/check-desc.sh
+      - name: shellcheck (если доступен)
+        run: |
+          if command -v shellcheck >/dev/null; then
+            shellcheck -S warning *.sh tools/*.sh lib/*.sh lang/*.sh || true
+          fi

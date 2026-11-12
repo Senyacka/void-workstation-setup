@@ -1,0 +1,17 @@
+# Скрипты и конфиги — текст, LF, независимо от ОС.
+*.sh      text eol=lf
+*.md      text eol=lf
+*.txt     text eol=lf
+*.conf    text eol=lf
+*.kdl     text eol=lf
+*.ini     text eol=lf
+*.tsv     text eol=lf
+*.json    text eol=lf
+*.py      text eol=lf
+
+# Бинарные ресурсы: без diff и без нормализации переводов строк.
+*.ttf     binary
+*.mp4     binary
+*.png     binary
+*.jpg     binary
+*.psfu.gz binary

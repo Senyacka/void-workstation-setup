@@ -1,0 +1,170 @@
+# package	group	short description	long description
+niri	base	тайловый композитор Wayland: колонки, воркспейсы, биндинги	Оконный менеджер с прокручиваемыми колонками. Даёт раскладку, горячие клавиши и управление выводами; конфиг в ~/.config/niri/config.kdl
+dms	base	шелл DankMaterialShell: бар, лаунчер, локскрин	Оболочка рабочего стола на Quickshell: верхняя панель, лаунчер, центр управления, уведомления, экран блокировки, настройки темы. Часть конфигурации niri генерирует сама
+quickshell	base	QML-движок, на котором работает DMS	Запускает QML-интерфейсы (сам шелл). Отдельно настраивать не нужно
+matugen	base	палитра Material You из обоев	Генерирует цветовую схему из картинки и раскрашивает GTK, kitty и другие приложения
+dgop	base	утилита DankLinux для обновлений и сервисов	Служебная утилита из репозитория DankLinux, используется шеллом
+greetd	base	экран входа в систему	Минимальный менеджер входа: запускает граф-сессию (greeter), из которой стартует niri
+tuigreet	base	текстовый greeter для greetd	Простой вход в консольном стиле — аварийный вариант, если графический greeter не работает
+dms-greeter	base	графический greeter в стиле DMS	Экран входа, оформленный как шелл: обои, часы, поле пароля
+pipewire	base	звуковой сервер	Заменяет PulseAudio и JACK: вывод/ввод звука, маршрутизация, работа с Bluetooth-наушниками
+wireplumber	base	менеджер сессий PipeWire	Управляет устройствами и профилями звука; без него нет звука и переключения выходов
+alsa-pipewire	base	мост ALSA → PipeWire	Позволяет старым программам, работающим через ALSA, выводить звук в PipeWire
+libspa-bluetooth	base	поддержка Bluetooth-аудио	Плагин SPA для кодеков A2DP/HFP — без него наушники работают только как гарнитура
+rtkit	base	приоритеты реального времени для аудио	Даёт аудио-потокам повышенный приоритет, чтобы не было треска под нагрузкой
+elogind	base	login-менеджер без systemd	Предоставляет logind-API: сессии, блокировка, питание — нужен большинству десктопных приложений
+polkit	base	авторизация привилегированных действий	Через него приложения просят права (монтирование диска, смена лимита заряда)
+seatd	base	доступ к устройствам ввода без root	Мини-демон, выдающий композитору права на GPU и ввод
+brightnessctl	base	яркость экрана из консоли	Утилита управления подсветкой; используется скриптами и шеллом
+power-profiles-daemon	base	профили питания	Переключает platform_profile: quiet/balanced/performance; с ним работает ползунок в DMS
+udisks2	base	монтирование дисков и флешек	Автомонтирование в файловом менеджере, работа с внешними накопителями
+gvfs-afc	base	доступ к iPhone/iPad по USB	GVFS-бэкенд для файлов на iOS-устройствах
+gvfs-mtp	base	доступ к Android по USB	GVFS-бэкенд для передачи файлов на телефоны
+gvfs-smb	base	сетевые папки Windows/SMB	GVFS-бэкенд для smb:// в файловом менеджере
+ntfs-3g	base	чтение и запись NTFS	Нужен, если на диске есть разделы Windows или внешние NTFS-накопители
+bluez	base	стек Bluetooth	Демон и утилиты Bluetooth: наушники, мышь, клавиатура
+thermald	base	контроль температуры	Демон Intel, ограничивает нагрев через доступные механизмы
+NetworkManager	base	управление сетью	Wi-Fi, Ethernet, VPN; хранит профили подключений
+NetworkManager-openvpn	network	VPN OpenVPN в NetworkManager	Позволяет импортировать .ovpn и подключаться из меню сети
+network-manager-applet	base	графический список сетей	Нужен как зависимость для выбора сетей из интерфейса
+wireless-regdb	base	региональные правила Wi-Fi	Задаёт разрешённые частоты и мощность для страны
+curl	base	HTTP-клиент для скриптов	Скачивание файлов и запросы к API из консоли
+wget	base	загрузчик файлов	Простое скачивание по HTTP/FTP
+rsync	base	синхронизация файлов	Копирование с исключениями и докачкой — используется установщиком и бэкапами
+kitty	base	терминал	GPU-ускоренный терминал с вкладками; конфиг в ~/.config/kitty
+fuzzel	base	лаунчер приложений	Быстрый поиск и запуск программ с клавиатуры
+Thunar	base	файловый менеджер	Лёгкий GTK-файловый менеджер; в этой системе используется в «стеклянной» теме
+thunar-archive-plugin	base	архивы в Thunar	Пункты «Сжать/Распаковать» в контекстном меню
+xarchiver	base	менеджер архивов	Просмотр и распаковка zip/7z/rar через графический интерфейс
+firefox	base	браузер	Основной браузер, работает нативно через Wayland
+xwayland-satellite	base	X11-приложения под Wayland	Запускает Xwayland по требованию, без отдельной Xorg-сессии
+gnome-keyring	base	хранилище паролей и ключей	Через него приложения хранят пароли; нужен для портала Secret
+xdg-desktop-portal-gnome	base	порталы GNOME	Скриншоты, screencast, работа с файлами из песочниц Flatpak
+xdg-desktop-portal-gtk	base	GTK-диалоги порталов	Рисует диалоги выбора файла и уведомлений
+xdg-desktop-portal-wlr	base	порталы для wlroots-композиторов	Дополнительный бэкенд порталов для Wayland
+xdg-utils	base	xdg-open и ассоциации файлов	Открывает файлы и ссылки в приложении по умолчанию
+setxkbmap	base	раскладка клавиатуры X11	Утилита настройки раскладок; нужна части приложений
+dejavu-fonts-ttf	base	шрифт DejaVu	Базовый набор символов, часто используется как запасной
+liberation-fonts-ttf	base	шрифты Liberation	Метрически совместимы с Arial/Times/Courier — для документов
+fonts-roboto-ttf	base	шрифт Roboto	Основной шрифт интерфейса (GTK и DMS)
+fonts-croscore-ttf	base	шрифты Croscore	Совместимые с Arial/Times аналоги от Google
+font-crosextra-caladea-ttf	base	шрифт Caladea	Совместим с Cambria — для офисных документов
+font-crosextra-carlito-ttf	base	шрифт Carlito	Совместим с Calibri — для офисных документов
+font-misc-misc	base	мелкие X11-шрифты	Запасные шрифты для старых приложений
+noto-fonts-ttf	base	шрифты Noto	Покрывают большинство языков мира
+noto-fonts-emoji	base	эмодзи	Цветные эмодзи в браузере и мессенджерах
+noto-fonts-cjk-sans	base	шрифты CJK	Китайские, японские и корейские иероглифы
+nerd-fonts-symbols-ttf	base	символы Nerd Fonts	Иконки для промптов и статус-строк
+terminus-font	base	консольный шрифт	Читаемый шрифт для текстовой консоли (tty)
+gnome-themes-standard	base	тема Adwaita и иконки	Базовые GTK-темы и иконки Adwaita
+hunspell-ru_RU	base	проверка орфографии (русский)	Словарь для LibreOffice и браузера
+mythes-ru	base	тезаурус (русский)	Синонимы для проверки стиля в LibreOffice
+git	base	система контроля версий	Нужен для репозиториев и для восстановления плагинов DMS
+7zip	base	архиватор 7z	Создание и распаковка 7z/zip и других форматов
+unzip	base	распаковка zip	Утилита для .zip из консоли
+zip	base	создание zip	Упаковка файлов в .zip
+unrar	base	распаковка rar	Чтение .rar архивов
+atool	base	универсальный архиватор	Одна команда aunpack для любого формата
+qpdf	base	работа с PDF	Сжатие, объединение и починка PDF из консоли
+pdfarranger	base	редактор страниц PDF	Удаление, поворот и перестановка страниц
+xournalpp	base	рукописные заметки	Заметки и аннотации пером, в том числе на PDF
+nano	base	простой редактор	Правка конфигов прямо в консоли
+dialog	base	диалоги в консоли	На нём построено меню установщика
+bash-completion	base	автодополнение в bash	Дополнение команд, путей и параметров по Tab
+chrony	base	синхронизация времени	NTP-клиент: точное время без systemd-timesyncd
+zstd	base	сжатие zstd	Быстрое сжатие; используется частью утилит и пакетов
+cryptsetup	base	шифрование дисков LUKS	Работа с зашифрованными разделами
+lvm2	base	менеджер томов	LVM-разделы: расширение и снимки
+mdadm	base	программный RAID	Сборка и обслуживание md-массивов
+linux6.18	base	ядро Linux 6.18	Актуальная ветка ядра Void; драйверы и модули
+linux-firmware	base	прошивки устройств	Фирмварь для Wi-Fi, GPU, звуковых кодеков и другого железа
+grub-x86_64-efi	base	загрузчик GRUB для EFI	Ставит загрузчик и генерирует меню; нужен для обновления параметров ядра
+void-repo-nonfree	base	репозиторий nonfree	Подключает пакеты с несвободными лицензиями (драйвер NVIDIA и др.)
+intel-ucode	hw-intel	микрокод Intel	Обновление микрокода процессора при загрузке
+intel-media-driver	hw-intel	аппаратный декод видео Intel (VA-API)	Ускорение видео в браузере и плеерах для GPU Gen9+
+libva-intel-driver	hw-intel	VA-API для старых GPU Intel	Запасной драйвер для GPU поколений до Gen9
+libva-utils	hw-intel	утилита vainfo	Показывает, какие кодеки ускоряются на этом GPU
+mesa-vulkan-intel	hw-intel	Vulkan для Intel	Драйвер Vulkan (anv) для игр и GPU-приложений
+intel-gpu-tools	hw-intel	диагностика GPU Intel	intel_gpu_top и другие утилиты наблюдения
+linux-firmware-amd	hw-amd	прошивки AMD	Микрокод CPU и фирмварь GPU AMD
+mesa-vaapi	hw-amd	аппаратный декод видео AMD (VA-API)	Ускорение видео для GPU AMD
+mesa-vulkan-radeon	hw-amd	Vulkan для AMD	Драйвер Vulkan (radv) для игр и GPU-приложений
+nvidia	hw-nvidia	драйвер NVIDIA	Проприетарный драйвер; требует nonfree-репозиторий и nvidia-drm.modeset=1
+nvidia-vaapi-driver	hw-nvidia	аппаратный декод на NVIDIA	VA-API-прослойка через NVDEC для ускорения видео
+google-chrome	apps	браузер Chrome	Второй браузер для профилей и проверки вёрстки
+telegram-desktop	apps	мессенджер Telegram	Официальный клиент
+libreoffice-writer	apps	документы	Текстовый процессор
+libreoffice-calc	apps	таблицы	Электронные таблицы
+libreoffice-impress	apps	презентации	Подготовка слайдов
+libreoffice-gnome	apps	интеграция с GTK	Нативные диалоги и тема оформления для LibreOffice
+sublime-merge	apps	сравнение файлов	Визуальный diff и слияние конфликтов
+restic	backup	бэкапы	Инкрементные зашифрованные копии в каталог, SFTP или облако
+fzf	cli-qol	нечёткий поиск	История команд, файлы, ветки git — одна клавиша
+ripgrep	cli-qol	быстрый поиск по коду	rg вместо grep: быстрее и учитывает .gitignore
+fd	cli-qol	поиск файлов	Короткий синтаксис вместо find
+jq	cli-qol	разбор JSON	Чтение и фильтрация JSON в консоли и скриптах
+bat	cli-qol	cat с подсветкой	Просмотр файлов с нумерацией строк и синтаксисом
+eza	cli-qol	современный ls	Цвета, иконки, дерево, git-статус
+tree	cli-qol	дерево каталогов	Быстрый обзор структуры папок
+tmux	cli-qol	мультиплексор терминала	Несколько окон и сохранение сессии на сервере
+btop	cli-qol	монитор ресурсов	CPU, память, диски, сеть в одном экране
+htop	cli-qol	список процессов	Интерактивный просмотр и управление процессами
+base-devel	dev	средства сборки	Компилятор, make и заголовки для сборки программ
+neovim	dev	редактор в терминале	Настраиваемый редактор для правки кода без GUI
+shellcheck	dev	линтер shell-скриптов	Находит типичные ошибки в sh/bash
+podman	dev	контейнеры без демона	Альтернатива Docker без постоянного сервиса
+pre-commit	dev	git-хуки	Автопроверки перед коммитом
+nodejs	dev	среда Node.js	Запуск JS-инструментов и npm
+smem	dev	анализ памяти	Реальное потребление памяти процессами
+docker	docker	контейнеры	Демон и CLI Docker; в этой системе включён в автозагрузку
+docker-compose	docker	compose для Docker	Запуск нескольких контейнеров из yml
+lm_sensors	hardware-tools	датчики температуры	Команда sensors: температуры, вентиляторы, напряжения
+fwupd	hardware-tools	обновление прошивок	BIOS/EC и прошивки устройств: fwupdmgr
+nvtop	hardware-tools	монитор GPU	Загрузка GPU и видеопамять в реальном времени
+powertop	hardware-tools	анализ энергопотребления	Показывает, что мешает ноутбуку спать
+gnome-disk-utility	hardware-tools	диски и разделы	Графическая утилита разметки, SMART и образов
+mpv	media	видеоплеер	Простой и быстрый плеер с поддержкой аппаратного декода
+imv	media	просмотр картинок	Лёгкий просмотрщик изображений для Wayland
+zathura	media	просмотр PDF	Быстрый просмотрщик документов с клавиатурным управлением
+ffmpeg	media	обработка медиа	Конвертация видео и звука, кадры, фильтры
+yt-dlp	media	скачивание видео	Загрузка роликов с YouTube и других сайтов
+pavucontrol	media	микшер	Отдельная громкость приложений и выбор профиля устройства
+mtr	network	диагностика сети	traceroute и ping в одном окне
+nmap	network	сканирование сети	Какие хосты и порты доступны
+speedtest-cli	network	тест скорости	Замер скорости интернета из консоли
+wireguard-tools	network	VPN WireGuard	Утилита wg и конфиги туннелей
+cups	print-scan	печать	Служба печати: принтеры и очереди
+cups-pdf	print-scan	печать в PDF	Виртуальный принтер, сохраняющий документ в файл
+sane	print-scan	сканеры	Драйверы и утилиты для сканеров
+simple-scan	print-scan	простой сканер	Графическое сканирование в один клик
+grim	screenshots	скриншот Wayland	Снимок экрана или области из консоли
+slurp	screenshots	выделение области	Возвращает геометрию выделенной области для grim
+swappy	screenshots	редактор скриншотов	Обрезка и аннотации сразу после снимка
+wf-recorder	screenshots	запись экрана	Запись видео с экрана в файл
+keepassxc	secrets	менеджер паролей	Локальное хранилище паролей с автозаполнением
+fprintd	secrets	отпечаток пальца	Вход и подтверждение по отпечатку
+qemu	vms	виртуальные машины	Эмулятор для запуска других систем
+virt-manager	vms	менеджер виртуальных машин	Графический интерфейс к QEMU/KVM
+lightdm	x11-legacy	вход через LightDM	Альтернативный экран входа (не используется при включённом greetd)
+lightdm-gtk-greeter	x11-legacy	GTK-greeter для LightDM	Экран входа к LightDM
+xfce4	x11-legacy	XFCE	Набор приложений XFCE (наследство, не используется в niri)
+xfce4-pulseaudio-plugin	x11-legacy	звук для панели XFCE	Плагин громкости панели XFCE
+xorg-input-drivers	x11-legacy	драйверы ввода X11	Нужны только для Xorg-сессий и части старых программ
+xorg-video-drivers	x11-legacy	драйверы видео X11	Нужны только для Xorg-сессий
+void-live-audio	x11-legacy	звук live-образа Void	Служебный пакет, обычно не нужен на установленной системе
+Waybar	x11-legacy	панель Waybar	Альтернативная панель; в этой системе не используется (бар рисует DMS)
+wdisplays	x11-legacy	раскладка мониторов	Графическая настройка мониторов (в DMS есть своя)
+grub-i386-efi	base	загрузчик GRUB (32-бит EFI)	Нужен только на 32-битных EFI-системах; обычно не требуется
+qt6-multimedia	base	Qt6 Multimedia	Декодирование видео в Qt-приложениях (в том числе в шелле DMS)
+qt5-wayland	base	Qt5 под Wayland	Плагин Wayland для приложений на Qt5
+Vulkan-Tools	hardware-tools	утилита vulkaninfo	Показывает, какое GPU и какой драйвер Vulkan используются
+badwolf	apps	лёгкий браузер	Минималистичный браузер на WebKitGTK
+brltty	apps	дисплеи Брайля	Поддержка брайлевских дисплеев
+orca	apps	экранный диктор	Озвучивание интерфейса для незрячих пользователей
+void-docs-browse	apps	документация Void	Локальный просмотр руководства Void Linux
+libreoffice-common	apps	общие файлы LibreOffice	Ресурсы, нужные всем компонентам офисного пакета
+libreoffice-draw	apps	векторная графика	Рисование схем и диаграмм в LibreOffice
+libreoffice-libgtk	apps	GTK-интеграция LibreOffice	Единый вид диалогов с системной темой
+libreoffice-math	apps	редактор формул	Формулы для документов LibreOffice
+xorg-minimal	x11-legacy	минимальный Xorg	Нужен только для Xorg-сессий; на Wayland не используется
+xauth	x11-legacy	авторизация X11	Утилита для X-авторизации (наследство Xorg)

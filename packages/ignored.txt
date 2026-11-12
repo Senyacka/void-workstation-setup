@@ -1,0 +1,23 @@
+# Пакеты, которые не нужно перечислять в группах.
+#
+# base-system            — ставится установщиком Void, всегда есть
+# base-devel и его -devel — тянут за собой набор заголовков и компилятор
+# linux                  — виртуальное имя: реальный пакет linux6.18
+base-system
+base-devel
+binutils
+bzip2-devel
+dtc
+libffi-devel
+liblzma-devel
+openssl-devel
+patch
+readline
+readline-devel
+sqlite-devel
+tcl
+tcl-devel
+tk
+tk-devel
+zlib-devel
+linux

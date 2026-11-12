@@ -1,0 +1,7 @@
+base-devel
+neovim
+shellcheck
+podman
+pre-commit
+nodejs
+smem

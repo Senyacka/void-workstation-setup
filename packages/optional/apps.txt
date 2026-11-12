@@ -1,0 +1,15 @@
+google-chrome
+telegram-desktop
+libreoffice-writer
+libreoffice-calc
+libreoffice-impress
+libreoffice-gnome
+sublime-merge
+badwolf
+brltty
+orca
+void-docs-browse
+libreoffice-common
+libreoffice-draw
+libreoffice-libgtk
+libreoffice-math

@@ -1,0 +1,103 @@
+# База: без этого не поднимется сессия или не совпадёт внешний вид.
+# Одно имя в строке, '#' — комментарий.
+
+# сессия и оболочка
+niri
+dms
+quickshell
+matugen
+dgop
+greetd
+tuigreet
+dms-greeter
+
+# звук
+pipewire
+wireplumber
+alsa-pipewire
+libspa-bluetooth
+rtkit
+
+# вход, права, питание
+elogind
+polkit
+seatd
+brightnessctl
+power-profiles-daemon
+udisks2
+gvfs-afc
+gvfs-mtp
+gvfs-smb
+ntfs-3g
+bluez
+thermald
+
+# сеть
+NetworkManager
+network-manager-applet
+wireless-regdb
+curl
+wget
+rsync
+
+# рабочий стол
+kitty
+fuzzel
+Thunar
+thunar-archive-plugin
+xarchiver
+firefox
+xwayland-satellite
+gnome-keyring
+xdg-desktop-portal-gnome
+xdg-desktop-portal-gtk
+xdg-desktop-portal-wlr
+xdg-utils
+setxkbmap
+
+# типографика и темы
+dejavu-fonts-ttf
+liberation-fonts-ttf
+fonts-roboto-ttf
+fonts-croscore-ttf
+font-crosextra-caladea-ttf
+font-crosextra-carlito-ttf
+font-misc-misc
+noto-fonts-ttf
+noto-fonts-emoji
+noto-fonts-cjk-sans
+nerd-fonts-symbols-ttf
+terminus-font
+gnome-themes-standard
+hunspell-ru_RU
+mythes-ru
+
+# утилиты
+git
+7zip
+unzip
+zip
+unrar
+atool
+qpdf
+pdfarranger
+xournalpp
+nano
+dialog
+bash-completion
+chrony
+zstd
+cryptsetup
+lvm2
+mdadm
+
+# ядро и загрузчик
+linux6.18
+linux-firmware
+grub-x86_64-efi
+
+# дополнительные репозитории
+void-repo-nonfree
+grub-i386-efi
+qt6-multimedia
+qt5-wayland

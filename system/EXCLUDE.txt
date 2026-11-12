@@ -1,0 +1,29 @@
+# Что намеренно НЕ переносится и почему.
+#
+# Машинная идентичность
+/etc/fstab                    UUID разделов зависят от разметки диска
+/etc/hostname                 задаётся в меню
+/etc/passwd /etc/group        учётные записи и группы
+/etc/shadow /etc/gshadow      хеши паролей
+/etc/subuid /etc/subgid       диапазоны subordinate uid/gid
+/etc/machine-id /etc/adjtime  идентичность и настройки RTC
+/etc/ld.so.cache /etc/mtab    генерируются системой
+/etc/resolv.conf              управляется NetworkManager
+/etc/securetty                отсутствует на этой системе
+
+# Воспроизводится установкой пакета (kind=pkgdrift)
+/etc/pam.d/login              строки pam_gnome_keyring добавляет пакет gnome-keyring
+
+# Личные файлы владельца, не часть установщика
+/usr/local/bin/postman-desktop
+/etc/udev/rules.d/99-paw3950-serial.rules
+
+# Секреты и профили приложений
+~/.ssh ~/ovpn ~/.npmrc ~/.gnupg ~/.pki ~/.cline
+~/.config/google-chrome ~/.config/mozilla ~/.config/Postman
+~/.config/VSCodium ~/.config/zed ~/.config/sublime-merge ~/.config/cline-sandbox
+
+# Кеш и привязка к железу
+~/.config/dms/plugins/.repos   восстанавливается через dms plugins restore
+~/.config/dms/monitors.json    профили мониторов этой машины
+~/.config/niri/dms/outputs.kdl  генерируется DMS под текущие мониторы

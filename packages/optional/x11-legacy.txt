@@ -1,0 +1,11 @@
+lightdm
+lightdm-gtk-greeter
+xfce4
+xfce4-pulseaudio-plugin
+xorg-input-drivers
+xorg-video-drivers
+void-live-audio
+Waybar
+wdisplays
+xorg-minimal
+xauth

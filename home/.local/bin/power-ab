@@ -1,0 +1,17 @@
+#!/bin/sh
+# power-ab — статистика разряда за отрезок времени (для A/B-сравнений).
+# Использование: power-ab <начало_ts> [конец_ts] [файл]
+set -u
+from=${1:?нужен начальный ts}
+to=${2:-$(date +%s)}
+file=${3:-${XDG_STATE_HOME:-$HOME/.local/state}/power-log.csv}
+awk -F, -v a="$from" -v b="$to" '
+    NR>1 && $5==0 && $2>0 && $1>=a && $1<=b {
+        n++; s+=$2; if(min==0||$2<min)min=$2; if($2>max)max=$2
+        fan+=$10; t+=$11; bl+=$12; pl+=$9; tb+=$8
+    }
+    END {
+        if(!n){print "нет сэмплов в отрезке"; exit}
+        printf "сэмплов %d · сред %.2f Вт · мин %.2f · макс %.2f\n", n, s/n/1e6, min/1e6, max/1e6
+        printf "PL1 %.0f Вт · no_turbo %.0f · обороты %.0f rpm · пакет %.0f C · подсветка %.0f/400\n", pl/n/1e6, tb/n, fan/n, t/n, bl/n
+    }' "$file"

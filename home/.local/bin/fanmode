@@ -1,0 +1,93 @@
+#!/bin/sh
+# fanmode — режимы охлаждения ноутбука (EC), Void + niri.
+#
+# Что реально умеет это железо (замерено на машине):
+#   platform_profile : quiet | balanced | performance   — три таблицы вентиляторов в EC;
+#                      в простое все дают ~2400–2900 rpm, разница видна под нагрузкой
+#   pwm1_enable      : 0 = обдув на максимум (замерено 5300 rpm), 2 = авто
+#   no_turbo         : 1 = без турбо-буста (меньше тепла → вентилятор не раскручивается)
+#   RAPL PL1/PL2     : лимит пакета CPU, мкВт
+#
+# Чего НЕ умеет: кривых вентиляторов. BIOS отвечает ENODEV
+# (драйвер EC отвечает ENODEV на запрос кривой), поэтому
+# «off» — это минимум оборотов, а не останов: ниже ~2500 rpm EC не опускается.
+#
+# Использование: fanmode [off|low|balance|high|next|status]
+
+set -u
+
+HW=/nonexistent
+for dev in /sys/class/hwmon/*; do
+    [ -r "$dev/fan1_input" ] || continue
+    case $(cat "$dev/name" 2>/dev/null) in
+        asus*|thinkpad|dell_smm|acer-wmi|msi-ec) HW=$dev; break ;;
+    esac
+done
+PP=/sys/firmware/acpi/platform_profile
+TURBO=/sys/devices/system/cpu/intel_pstate/no_turbo
+PL1=/sys/class/powercap/intel-rapl:0/constraint_0_power_limit_uw
+PL2=/sys/class/powercap/intel-rapl:0/constraint_1_power_limit_uw
+STATE="${XDG_CACHE_HOME:-$HOME/.cache}/fanmode/mode"
+
+put() { printf '%s\n' "$2" | sudo -n tee "$1" >/dev/null 2>&1 || true; }
+fan_rpm() { cat "$HW/fan1_input" 2>/dev/null || echo 0; }
+temp_max() {
+    t=$(cat /sys/class/thermal/thermal_zone*/temp 2>/dev/null | sort -n | tail -1)
+    echo $(( ${t:-0} / 1000 ))
+}
+
+notify() {
+    notify-send -a fanmode -t 2000 "Охлаждение: $1" \
+        "$(fan_rpm) rpm · $(temp_max) °C" 2>/dev/null || true
+}
+
+apply() {
+    mode=$1
+    case $mode in
+        off)     pp=power-saver; turbo=1; pl1=20000000;  pl2=25000000;  fans=2 ;;
+        low)     pp=power-saver; turbo=1; pl1=45000000;  pl2=60000000;  fans=2 ;;
+        balance) pp=balanced;    turbo=0; pl1=115000000; pl2=115000000; fans=2 ;;
+        high)    pp=performance; turbo=0; pl1=115000000; pl2=115000000; fans=0 ;;
+        *) echo "неизвестный режим: $mode" >&2; return 1 ;;
+    esac
+
+    # профиль задаём через PPD, иначе он перезапишет sysfs своей копией состояния
+    powerprofilesctl set "$pp" 2>/dev/null || put "$PP" "$pp"
+    put "$TURBO" "$turbo"
+    put "$PL1" "$pl1"
+    put "$PL2" "$pl2"
+    put "$HW/pwm1_enable" "$fans"
+
+    mkdir -p "$(dirname "$STATE")"
+    printf '%s\n' "$mode" > "$STATE"
+    sleep 1
+    notify "$mode"
+}
+
+next_mode() {
+    cur=$(cat "$STATE" 2>/dev/null || echo balance)
+    case $cur in
+        off)     apply low ;;
+        low)     apply balance ;;
+        balance) apply high ;;
+        high)    apply off ;;
+        *)       apply balance ;;
+    esac
+}
+
+status() {
+    printf 'режим:   %s\n' "$(cat "$STATE" 2>/dev/null || echo '(не задан)')"
+    printf 'профиль: %s\n' "$(cat "$PP" 2>/dev/null)"
+    printf 'обороты: %s rpm\n' "$(fan_rpm)"
+    printf 'темп:    %s °C\n' "$(temp_max)"
+    printf 'турбо:   %s\n' "$( [ "$(cat "$TURBO" 2>/dev/null)" = 1 ] && echo выключен || echo включён )"
+    printf 'PL1:     %s Вт\n' "$(( $(cat "$PL1" 2>/dev/null || echo 0) / 1000000 ))"
+    printf 'обдув:   %s\n' "$( [ "$(cat "$HW/pwm1_enable" 2>/dev/null)" = 0 ] && echo принудительный максимум || echo авто )"
+}
+
+case "${1:-status}" in
+    off|low|balance|high) apply "$1" ;;
+    next)                 next_mode ;;
+    status)               status ;;
+    *)                    echo "использование: fanmode [off|low|balance|high|next|status]" >&2; exit 2 ;;
+esac

@@ -1,0 +1,15 @@
+{
+  "aiOverviewControl": {
+    "enabled": false,
+    "providerSelection": "cline",
+    "pillProviders": "cline",
+    "showRemainingQuota": "true"
+  },
+  "quickCapture": {
+    "enabled": true
+  },
+  "dockerManager": {
+    "enabled": true,
+    "groupByCompose": false
+  }
+}

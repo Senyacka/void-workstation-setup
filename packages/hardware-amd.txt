@@ -1,0 +1,4 @@
+# Применяется, если определён CPU или GPU AMD.
+linux-firmware-amd
+mesa-vaapi
+mesa-vulkan-radeon

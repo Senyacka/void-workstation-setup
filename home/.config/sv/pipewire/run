@@ -1,0 +1,11 @@
+#!/bin/sh
+exec 2>&1
+# PipeWire: единственный экземпляр на сессию, под присмотром runit.
+# Запускается из niri (spawn-at-startup start-session-audio), НЕ из ~/.bash_profile.
+[ -d "$XDG_RUNTIME_DIR" ] || exit 1
+# Подчищаем осиротевший процесс/сокеты от прошлой сессии,
+# иначе новый экземпляр упадёт с Address already in use.
+pkill -x pipewire 2>/dev/null || true
+sleep 0.3
+rm -f "$XDG_RUNTIME_DIR/pipewire-0" "$XDG_RUNTIME_DIR/pipewire-0.lock" "$XDG_RUNTIME_DIR/pipewire-0-manager" "$XDG_RUNTIME_DIR/pipewire-0-manager.lock"
+exec pipewire

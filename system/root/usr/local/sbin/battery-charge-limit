@@ -1,0 +1,140 @@
+#!/bin/sh
+# battery-charge-limit - keep BAT0's charge threshold on the value chosen in DMS.
+#
+# DMS owns the value: the "Charge limit" slider plus "Apply to hardware" writes the
+# sysfs attribute itself (through pkexec), and every such write raises a "change"
+# uevent. This helper therefore must not fight DMS - it keeps the limit alive
+# between those writes: it restores the remembered value when the EC forgets
+# the threshold (power loss brings the EC back to 100) and on power source changes.
+#
+# Modes:
+#   boot     udev "add" for BAT0 - apply the remembered limit, never adopt sysfs
+#   change   udev "change" for BAT0 - adopt a threshold written by someone else
+#   enforce  power source changed (power-sync) - re-assert the remembered limit
+#   set N    remember N and apply it, e.g. battery-charge-limit set 60
+#   status   print the remembered and the current threshold
+set -u
+
+CONF=/etc/battery-charge-limit.conf
+ATTR=/sys/class/power_supply/BAT0/charge_control_end_threshold
+STATE_DIR=/var/lib/battery-charge-limit
+STATE=$STATE_DIR/limit
+STAMP=$STATE_DIR/dms-mtime
+LOCK=$STATE_DIR/lock
+OURS=$STATE_DIR/last-write
+LIMIT=80
+DMS_SETTINGS=
+# DMS rewrites settings.json on every change, "Apply to hardware" may follow later.
+DMS_FRESH_SECONDS=90
+
+[ -r "$CONF" ] && . "$CONF"
+
+MODE=${1:-enforce}
+
+valid() {
+    case ${1:-} in ''|*[!0-9]*) return 1 ;; esac
+    [ "$1" -ge 20 ] && [ "$1" -le 100 ]
+}
+
+remembered() {
+    v=
+    [ -r "$STATE" ] && v=$(cat "$STATE" 2>/dev/null)
+    if valid "$v"; then printf '%s\n' "$v"; else printf '%s\n' "$LIMIT"; fi
+}
+
+remember() {
+    mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+    printf '%s\n' "$1" > "$STATE" 2>/dev/null || true
+}
+
+# 100 is the value of both "no limit" in DMS and of the EC's own fallback. A slider
+# move rewrites settings.json and "Apply to hardware" follows it, so a settings
+# write newer than the one seen on the previous run marks the 100 as deliberate.
+dms_wrote() {
+    [ -n "$DMS_SETTINGS" ] && [ -r "$DMS_SETTINGS" ] || return 1
+    mtime=$(stat -c %Y "$DMS_SETTINGS" 2>/dev/null) || return 1
+    stamp=$(cat "$STAMP" 2>/dev/null || echo 0)
+    case $stamp in ''|*[!0-9]*) stamp=0 ;; esac
+    [ "$mtime" != "$stamp" ] && return 0
+    [ $(( $(date +%s) - mtime )) -le "$DMS_FRESH_SECONDS" ]
+}
+
+stamp_dms() {
+    [ -n "$DMS_SETTINGS" ] && [ -r "$DMS_SETTINGS" ] || return 0
+    mkdir -p "$STATE_DIR" 2>/dev/null || return 0
+    stat -c %Y "$DMS_SETTINGS" 2>/dev/null > "$STAMP" 2>/dev/null || true
+}
+
+# Our own writes come back as "change" uevents too, and power-sync's enforce may
+# race with them: a value this helper wrote itself is never a user choice.
+last_written() {
+    cat "$OURS" 2>/dev/null || echo ''
+}
+
+write_limit() {
+    i=0
+    # At early boot the EC may answer EACCES while it is not ready yet.
+    while [ "$i" -lt 10 ]; do
+        if echo "$1" > "$ATTR" 2>/dev/null; then
+            printf '%s\n' "$1" > "$OURS" 2>/dev/null || true
+            return 0
+        fi
+        i=$(( i + 1 ))
+        sleep 1
+    done
+    return 1
+}
+
+main() {
+    case $MODE in
+        set) valid "${2:-}" || { echo "usage: ${0##*/} set <20..100>" >&2; exit 2; } ;;
+    esac
+
+    mkdir -p "$STATE_DIR" 2>/dev/null || true
+    n=0
+    while ! mkdir "$LOCK" 2>/dev/null; do
+        n=$(( n + 1 ))
+        [ "$n" -gt 50 ] && break
+        sleep 0.2
+    done
+    trap 'rmdir "$LOCK" 2>/dev/null' EXIT
+
+    case $MODE in
+        set)
+            remember "$2"
+            write_limit "$2" || true
+            stamp_dms
+            exit 0
+            ;;
+        status)
+            printf 'remembered: %s\ncurrent:    %s\n' "$(remembered)" "$(cat "$ATTR" 2>/dev/null || echo '?')"
+            exit 0
+            ;;
+    esac
+
+    [ -w "$ATTR" ] || exit 0
+
+    desired=$(remembered)
+    current=$(cat "$ATTR" 2>/dev/null || echo '')
+
+    adopt=0
+    if [ "$MODE" = change ] && valid "$current" && [ "$current" != "$desired" ]; then
+        adopt=1
+        [ "$current" = "$(last_written)" ] && adopt=0
+        if [ "$current" = 100 ] && ! dms_wrote; then
+            adopt=0
+        fi
+    fi
+    if [ "$adopt" = 1 ]; then
+        remember "$current"
+        desired=$current
+        rm -f "$OURS" 2>/dev/null || true
+    fi
+
+    stamp_dms
+    [ "$current" = "$desired" ] && exit 0
+    write_limit "$desired" || true
+    exit 0
+}
+
+main "$@"

@@ -1,0 +1,4 @@
+cups
+cups-pdf
+sane
+simple-scan

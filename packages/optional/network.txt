@@ -1,0 +1,5 @@
+mtr
+nmap
+speedtest-cli
+wireguard-tools
+NetworkManager-openvpn

@@ -1,0 +1,32 @@
+#!/bin/sh
+# Запуск пользовательских runit-сервисов аудио (pipewire, pipewire-pulse, wireplumber).
+# Вызывается из niri (spawn-at-startup).
+#
+# Зачем уборка: если предыдущий runsvdir/runsv остались живы (например, после
+# ручного kill или падения сессии), они продолжат «рулить» теми же сервисами,
+# и получится два супервизора. Поэтому перед стартом убираем всё своё старое.
+SERVICE_DIR="$HOME/.config/service"
+SV_DIR="$HOME/.config/sv"
+
+# 1. Старый runsvdir этого дерева
+pkill -f "runsvdir -P $SERVICE_DIR" 2>/dev/null || true
+
+# 2. Осиротевшие runsv, чей рабочий каталог — наш ~/.config/sv/*
+for p in $(pgrep -x runsv 2>/dev/null); do
+    cwd=$(readlink "/proc/$p/cwd" 2>/dev/null)
+    case "$cwd" in
+        "$SV_DIR"/*) kill "$p" 2>/dev/null ;;
+    esac
+done
+
+# 3. Осиротевшие svlogd, пишущие в наши логи
+for p in $(pgrep -x svlogd 2>/dev/null); do
+    cmd=$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null)
+    case "$cmd" in
+        *"$HOME/.local/state/runit"*) kill "$p" 2>/dev/null ;;
+    esac
+done
+
+sleep 0.5
+exec runsvdir -P "$SERVICE_DIR"
+
